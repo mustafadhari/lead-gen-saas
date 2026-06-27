@@ -154,7 +154,8 @@ export async function crawlLeads(businessType, city, jobId = null, websiteFilter
       console.log(`[crawler]   saved: ${details.business_name}`);
 
       // ── Push to Krayin CRM (real-time, non-blocking) ──
-      pushLeadToKrayin(data).then(({ krayinLeadId }) => {
+      const krayinPayload = { ...data, category: businessType, city: city };
+      pushLeadToKrayin(krayinPayload).then(({ krayinLeadId }) => {
         if (krayinLeadId) {
           // Store the Krayin lead ID back in Supabase for cross-reference
           supabase

@@ -72,6 +72,16 @@ export async function pushLeadToKrayin(lead) {
 
     if (krayinLeadId) {
       console.log(`[krayin] lead pushed — id: ${krayinLeadId} ("${lead.business_name}")`);
+      
+      // Assign tags if provided
+      if (lead.category) {
+        const catTagId = await getOrCreateTag(lead.category);
+        if (catTagId) await assignTagToLead(krayinLeadId, catTagId);
+      }
+      if (lead.city) {
+        const cityTagId = await getOrCreateTag(lead.city);
+        if (cityTagId) await assignTagToLead(krayinLeadId, cityTagId);
+      }
     }
 
     return { krayinLeadId };
@@ -125,4 +135,79 @@ function buildDescription(lead) {
   if (lead.source_url) lines.push(`Google Maps: ${lead.source_url}`);
 
   return lines.join('\n');
+}
+
+// ── Tag Management ──────────────────────────────────────
+
+const tagCache = new Map();
+
+async function getOrCreateTag(name) {
+  const { baseUrl, apiToken } = config.krayin;
+  if (!name) return null;
+  const tagName = name.trim();
+  
+  if (tagCache.has(tagName)) {
+    return tagCache.get(tagName);
+  }
+  
+  try {
+    // 1. Search if tag exists
+    const searchRes = await fetch(`${baseUrl}/api/v1/settings/tags?search=${encodeURIComponent(tagName)}`, {
+      headers: { Authorization: `Bearer ${apiToken}`, Accept: 'application/json' },
+    });
+    if (searchRes.ok) {
+      const searchData = await searchRes.json();
+      const existing = searchData?.data?.find(t => t.name.toLowerCase() === tagName.toLowerCase());
+      if (existing) {
+        tagCache.set(tagName, existing.id);
+        return existing.id;
+      }
+    }
+
+    // 2. Create new tag
+    const createRes = await fetch(`${baseUrl}/api/v1/settings/tags`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiToken}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({ name: tagName, color: '#336699' }),
+    });
+    
+    if (createRes.ok) {
+      const createData = await createRes.json();
+      const newTagId = createData?.data?.id;
+      if (newTagId) {
+        tagCache.set(tagName, newTagId);
+        return newTagId;
+      }
+    }
+  } catch (err) {
+    console.error(`[krayin] failed to get/create tag "${tagName}": ${err.message}`);
+  }
+  return null;
+}
+
+async function assignTagToLead(leadId, tagId) {
+  const { baseUrl, apiToken } = config.krayin;
+  if (!leadId || !tagId) return;
+
+  try {
+    const res = await fetch(`${baseUrl}/api/v1/leads/${leadId}/tags`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiToken}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({ tag_id: tagId }),
+    });
+    if (!res.ok) {
+      const body = await res.text().catch(() => '');
+      console.error(`[krayin] failed to assign tag ${tagId} to lead ${leadId}: ${body}`);
+    }
+  } catch (err) {
+    console.error(`[krayin] failed to assign tag ${tagId} to lead ${leadId}: ${err.message}`);
+  }
 }
