@@ -1,0 +1,18 @@
+node_modules/
+.env
+.env.local
+dist/
+*.log
+.DS_Store
+
+# ── Krayin CRM (self-contained Laravel app) ──────────────
+crm/vendor/
+crm/.env
+crm/storage/
+crm/public/storage
+crm/bootstrap/cache/
+
+# ── Agent settings & tools ──────────────
+.claude/
+.agents/
+

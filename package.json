@@ -1,0 +1,29 @@
+{
+  "name": "lead-gen-saas",
+  "version": "1.0.0",
+  "description": "Lead crawler and cold caller SaaS — crawl leads, queue calls via Vapi, send emails via Resend",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "crawl": "node src/crawler/index.js",
+    "migrate": "node src/db/migrate.js",
+    "dev": "node --watch-path=src src/index.js"
+  },
+  "keywords": [
+    "lead-gen",
+    "cold-calling",
+    "crawler",
+    "vapi",
+    "resend"
+  ],
+  "license": "UNLICENSED",
+  "private": true,
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.0",
+    "dotenv": "^16.4.0",
+    "node-cron": "^4.2.1",
+    "playwright": "^1.58.2"
+  }
+}
+
